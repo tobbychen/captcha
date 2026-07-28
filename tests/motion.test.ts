@@ -23,7 +23,7 @@ describe('motion', () => {
     expect(updated.t).toBeCloseTo(0.5)
   })
 
-  it('advanceBezier regenerates path when t reaches 1', () => {
+  it('advanceBezier continues path continuously when t reaches 1', () => {
     const path: BezierPath = {
       p0: { x: 0, y: 0 }, p1: { x: 0, y: 100 },
       p2: { x: 100, y: 100 }, p3: { x: 100, y: 0 },
@@ -31,7 +31,8 @@ describe('motion', () => {
     }
     const updated = advanceBezier(path, 100, 200, 100, 10)
     expect(updated.t).toBeLessThan(0.95)
-    expect(updated.p3.x).not.toEqual(path.p3.x)
+    expect(updated.p0.x).toBeCloseTo(path.p3.x)
+    expect(updated.p0.y).toBeCloseTo(path.p3.y)
   })
 
   it('bezierPosition at t=0 returns p0', () => {

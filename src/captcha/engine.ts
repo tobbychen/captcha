@@ -230,16 +230,27 @@ export class CaptchaEngine {
       ctx.drawImage(this.camoCanvas, 0, 0, this.config.width, this.config.height)
     }
 
+    const capturedForIndicator: Array<{ x: number; y: number; pickOrder: number }> = []
+
     for (const s of this.shapes) {
       const isDecoy = s.challenge === null
       const showOutline = !isDecoy
       drawShape(ctx, s, showOutline, isDecoy)
+      if (s.captured && s.challenge) {
+        capturedForIndicator.push({ x: s.x, y: s.y, pickOrder: s.pickOrder })
+      }
     }
 
-    for (const s of this.shapes) {
-      if (s.captured && s.challenge) {
-        drawOrderIndicator(ctx, s.x, s.y, s.pickOrder)
-      }
+    ctx.save()
+    ctx.beginPath()
+    for (const ind of capturedForIndicator) {
+      ctx.rect(ind.x - 14, ind.y - 14, 28, 28)
+    }
+    ctx.clip()
+    ctx.restore()
+
+    for (const ind of capturedForIndicator) {
+      drawOrderIndicator(ctx, ind.x, ind.y, ind.pickOrder)
     }
 
     if (this.verified) {
