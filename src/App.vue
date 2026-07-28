@@ -40,6 +40,21 @@ onMounted(() => {
       .sort((a: any, b: any) => a.challenge.order - b.challenge.order)
       .map((s: any) => ({ x: s.x, y: s.y, id: s.challenge.id }))
   }
+  ;(window as any).__captchaSolve = () => {
+    const canvas = document.querySelector('[data-testid="captcha-canvas"]') as any
+    if (!canvas) return null
+    const vm = (canvas as any).__vueParentComponent
+    if (!vm) return null
+    const state = vm.exposed?.getState?.()
+    if (!state) return null
+    const sorted = [...state.shapes]
+      .filter((s: any) => s.challenge !== null)
+      .sort((a: any, b: any) => a.challenge.order - b.challenge.order)
+    for (const s of sorted) {
+      vm.exposed.simulateClick(s.x, s.y)
+    }
+    return sorted.length
+  }
 })
 </script>
 
