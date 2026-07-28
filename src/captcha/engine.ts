@@ -1,6 +1,6 @@
 import type { Challenge, EngineConfig, ShapeRenderMeta, VerifyResult } from './types'
 import { SHAPE_TYPES } from './types'
-import { fillCamo, drawShape, drawOrderIndicator, drawSuccessCheck } from './renderer'
+import { fillCamo, drawShape, drawOrderIndicator, drawSuccessCheck, CAMO_TILE_HEIGHT } from './renderer'
 import { newBezierPath, advanceBezier, bezierPosition, type BezierPath } from './motion'
 
 const PADDING = 18
@@ -28,7 +28,7 @@ export class CaptchaEngine {
   private lastTs = 0
   private pickOrder = 0
   private verified = false
-  private camoCanvas: HTMLCanvasElement | null = null
+  private camoPattern: CanvasPattern | null = null
   private scrollOffset = 0
 
   constructor(config: EngineConfig, ctx: CanvasRenderingContext2D, callbacks: EngineCallbacks) {
@@ -118,29 +118,20 @@ export class CaptchaEngine {
 
   private preRenderCamo() {
     if (typeof document === 'undefined') {
-      this.camoCanvas = null
+      this.camoPattern = null
       return
     }
     const W = this.config.width
-    const H = this.config.height
-    const off = document.createElement('canvas')
-    off.width = W
-    off.height = H * 3
-    const octx = off.getContext('2d')
-    if (!octx) {
-      this.camoCanvas = null
+    const tile = document.createElement('canvas')
+    tile.width = W
+    tile.height = CAMO_TILE_HEIGHT
+    const tctx = tile.getContext('2d')
+    if (!tctx) {
+      this.camoPattern = null
       return
     }
-    fillCamo(octx, W, H)
-    octx.save()
-    octx.translate(0, H)
-    fillCamo(octx, W, H)
-    octx.restore()
-    octx.save()
-    octx.translate(0, 2 * H)
-    octx.drawImage(off, 0, 0, W, H, 0, 2 * H, W, H)
-    octx.restore()
-    this.camoCanvas = off
+    fillCamo(tctx, W, CAMO_TILE_HEIGHT)
+    this.camoPattern = this.ctx.createPattern(tile, 'repeat')
   }
 
   start() {
@@ -240,7 +231,7 @@ export class CaptchaEngine {
 
   private update(dt: number) {
     const dtClamped = Math.min(dt, 50) * this.config.motionSpeed
-    this.scrollOffset = (this.scrollOffset + dtClamped * SCROLL_SPEED) % (this.config.height * 2)
+    this.scrollOffset = (this.scrollOffset + dtClamped * SCROLL_SPEED) % CAMO_TILE_HEIGHT
     const now = performance.now()
 
     for (const s of this.shapes) {
@@ -262,13 +253,13 @@ export class CaptchaEngine {
     const H = this.config.height
     ctx.clearRect(0, 0, W, H)
 
-    if (this.camoCanvas) {
-      const so = Math.floor(this.scrollOffset)
-      ctx.drawImage(
-        this.camoCanvas,
-        0, so, W, H,
-        0, 0, W, H
-      )
+    if (this.camoPattern) {
+      ctx.save()
+      ctx.fillStyle = this.camoPattern
+      const offset = this.scrollOffset % CAMO_TILE_HEIGHT
+      ctx.translate(0, offset)
+      ctx.fillRect(0, -CAMO_TILE_HEIGHT, W, H + 2 * CAMO_TILE_HEIGHT)
+      ctx.restore()
     }
 
     const capturedForIndicator: Array<{ x: number; y: number; pickOrder: number }> = []
@@ -326,5 +317,9 @@ export class CaptchaEngine {
       pickOrder: this.pickOrder,
       scrollOffset: this.scrollOffset
     }
+  }
+
+  debugCamoCanvas(): HTMLCanvasElement | null {
+    return null
   }
 }

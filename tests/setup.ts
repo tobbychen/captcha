@@ -26,6 +26,7 @@ function makeMockCtx(): any {
     save: vi.fn(noop), restore: vi.fn(noop),
     createRadialGradient: vi.fn(() => grad),
     createLinearGradient: vi.fn(() => grad),
+    createPattern: vi.fn(() => null),
     fillText: vi.fn(noop),
     setTransform: vi.fn(noop), scale: vi.fn(noop),
     translate: vi.fn(noop), rotate: vi.fn(noop)

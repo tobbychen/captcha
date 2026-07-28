@@ -21,6 +21,7 @@ function makeCtx() {
     save: vi.fn(), restore: vi.fn(),
     createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    createPattern: vi.fn(() => null),
     fillText: vi.fn(),
     setTransform: vi.fn(), scale: vi.fn(), translate: vi.fn(), rotate: vi.fn(),
     font: '', textAlign: '', textBaseline: '',

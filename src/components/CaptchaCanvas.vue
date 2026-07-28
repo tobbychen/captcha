@@ -71,6 +71,8 @@ onMounted(() => {
     })
     if (containerEl) resizeObserver.observe(containerEl)
   }
+
+  ;(window as any).__getCamo = () => engine ? engine.debugCamoCanvas() : null
 })
 
 onBeforeUnmount(() => {
