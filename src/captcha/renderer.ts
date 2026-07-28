@@ -91,3 +91,49 @@ function hexWithAlpha(hex: string, alpha: number): string {
   const a = Math.round(alpha * 255).toString(16).padStart(2, '0')
   return hex + a
 }
+
+export function drawOrderIndicator(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  pickOrder: number
+): void {
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(x, y, 11, 0, Math.PI * 2)
+  ctx.fillStyle = '#ffffff'
+  ctx.fill()
+  ctx.strokeStyle = '#1f0a04'
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+
+  ctx.fillStyle = '#1f0a04'
+  ctx.font = '700 12px system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(pickOrder), x, y + 1)
+  ctx.restore()
+}
+
+export function drawSuccessCheck(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number
+): void {
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(x, y, 14, 0, Math.PI * 2)
+  ctx.fillStyle = '#16a34a'
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.moveTo(x - 7, y)
+  ctx.lineTo(x - 2, y + 5)
+  ctx.lineTo(x + 8, y - 6)
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 3
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.stroke()
+  ctx.restore()
+}

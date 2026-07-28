@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { preRenderCamo, drawShape } from '../src/captcha/renderer'
+import { preRenderCamo, drawShape, drawOrderIndicator, drawSuccessCheck } from '../src/captcha/renderer'
 import type { ShapeRenderMeta } from '../src/captcha/types'
 
 function makeCtx() {
@@ -78,5 +78,22 @@ describe('renderer.drawShape', () => {
     const ctx = makeCtx()
     drawShape(ctx, { ...baseMeta, gradientKind: 'linear' }, true, false)
     expect(ctx.createLinearGradient).toHaveBeenCalled()
+  })
+})
+
+describe('renderer overlays', () => {
+  it('drawOrderIndicator draws a white circle and a number', () => {
+    const ctx = makeCtx()
+    drawOrderIndicator(ctx, 100, 100, 2)
+    expect(ctx.beginPath).toHaveBeenCalled()
+    expect(ctx.arc).toHaveBeenCalled()
+    expect(ctx.fillText).toHaveBeenCalledWith('2', expect.any(Number), expect.any(Number))
+  })
+
+  it('drawSuccessCheck draws a check path', () => {
+    const ctx = makeCtx()
+    drawSuccessCheck(ctx, 50, 50)
+    expect(ctx.beginPath).toHaveBeenCalled()
+    expect(ctx.fill).toHaveBeenCalled()
   })
 })
