@@ -3,11 +3,9 @@ import { getShapePath } from './shapes'
 import { STIPPLE_DARK, STIPPLE_LIGHT, OUTLINE_COLOR, SHAPE_FILL_A, SHAPE_FILL_B } from './palette'
 import type { ShapeRenderMeta } from './types'
 
-export function preRenderCamo(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number
-): void {
+export const CAMO_TILE_HEIGHT = 200
+
+export function fillCamo(ctx: CanvasRenderingContext2D, width: number, height: number): void {
   ctx.fillStyle = CAMO_PALETTE[0]
   ctx.fillRect(0, 0, width, height)
 
@@ -33,6 +31,14 @@ export function preRenderCamo(
   }
 }
 
+export function preRenderCamo(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  fillCamo(ctx, width, height)
+}
+
 export function drawShape(
   ctx: CanvasRenderingContext2D,
   meta: ShapeRenderMeta,
@@ -43,6 +49,14 @@ export function drawShape(
 
   ctx.save()
   if (decoy) ctx.globalAlpha = 0.55
+
+  ctx.translate(meta.x, meta.y)
+  ctx.rotate(meta.rotation)
+  ctx.scale(
+    Math.max(0.15, Math.abs(Math.cos(meta.tiltY))),
+    Math.max(0.15, Math.abs(Math.cos(meta.tiltX)))
+  )
+  ctx.translate(-meta.x, -meta.y)
 
   if (meta.gradientKind === 'radial') {
     const grad = ctx.createRadialGradient(meta.x, meta.y, 0, meta.x, meta.y, meta.size * 1.2)

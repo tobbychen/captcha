@@ -37,6 +37,14 @@ export interface ShapeRenderMeta {
   gradientKind: 'radial' | 'linear'
   gradientOpacityA: number
   gradientOpacityB: number
+  rotation: number
+  rotationSpeed: number
+  tiltX: number
+  tiltY: number
+  tiltPhase: number
+  tiltFreqX: number
+  tiltFreqY: number
+  tiltAmp: number
 }
 
 export interface EngineConfig {

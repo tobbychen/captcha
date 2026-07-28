@@ -17,11 +17,12 @@ function makeCtx() {
     fillRect: vi.fn(), clearRect: vi.fn(), drawImage: vi.fn(),
     fill: vi.fn(), stroke: vi.fn(),
     beginPath: vi.fn(), arc: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), closePath: vi.fn(),
+    rect: vi.fn(), clip: vi.fn(),
     save: vi.fn(), restore: vi.fn(),
     createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     fillText: vi.fn(),
-    setTransform: vi.fn(), scale: vi.fn(),
+    setTransform: vi.fn(), scale: vi.fn(), translate: vi.fn(), rotate: vi.fn(),
     font: '', textAlign: '', textBaseline: '',
     globalAlpha: 1,
     lineCap: '', lineJoin: ''

@@ -1,11 +1,12 @@
 import type { Challenge, EngineConfig, ShapeRenderMeta, VerifyResult } from './types'
 import { SHAPE_TYPES } from './types'
-import { preRenderCamo, drawShape, drawOrderIndicator, drawSuccessCheck } from './renderer'
+import { fillCamo, drawShape, drawOrderIndicator, drawSuccessCheck } from './renderer'
 import { newBezierPath, advanceBezier, bezierPosition, type BezierPath } from './motion'
 
 const PADDING = 18
 const HIT_RADIUS = 25
 const SHAPE_BASE_SIZE = 18
+const SCROLL_SPEED = 0.025
 
 interface EngineCallbacks {
   onVerify: (r: VerifyResult) => void
@@ -15,6 +16,7 @@ interface EngineCallbacks {
 interface InternalShape extends ShapeRenderMeta {
   challenge: Challenge | null
   path: BezierPath
+  spawnTime: number
 }
 
 export class CaptchaEngine {
@@ -27,6 +29,7 @@ export class CaptchaEngine {
   private pickOrder = 0
   private verified = false
   private camoCanvas: HTMLCanvasElement | null = null
+  private scrollOffset = 0
 
   constructor(config: EngineConfig, ctx: CanvasRenderingContext2D, callbacks: EngineCallbacks) {
     this.config = config
@@ -52,9 +55,11 @@ export class CaptchaEngine {
     this.shapes = []
     this.pickOrder = 0
     this.verified = false
+    this.scrollOffset = 0
 
+    const now = performance.now()
     for (const c of this.config.challenges) {
-      this.shapes.push(this.makeShape(c.shape, c, false))
+      this.shapes.push(this.makeShape(c.shape, c, false, now))
     }
 
     const [minDecoy, maxDecoy] = this.config.decoyRange
@@ -63,10 +68,39 @@ export class CaptchaEngine {
     const pool = SHAPE_TYPES.filter(t => !challengeShapes.has(t))
     for (let i = 0; i < decoyCount; i++) {
       const t = pool[Math.floor(Math.random() * pool.length)]
-      this.shapes.push(this.makeShape(t, null, true))
+      this.shapes.push(this.makeShape(t, null, true, now))
     }
 
     this.initializePositions()
+  }
+
+  private makeShape(shape: import('./types').ShapeType, challenge: Challenge | null, decoy: boolean, now: number): InternalShape {
+    const path = newBezierPath(this.config.width, this.config.height, PADDING + SHAPE_BASE_SIZE)
+    const style = Math.random()
+    const spin = Math.random() < 0.6
+    return {
+      id: challenge ? challenge.id : `decoy-${Math.random().toString(36).slice(2, 8)}`,
+      challenge,
+      shape,
+      x: 0, y: 0,
+      size: SHAPE_BASE_SIZE + Math.random() * 4,
+      captured: false,
+      pickOrder: 0,
+      gradientAngle: Math.random() * Math.PI * 2,
+      gradientKind: Math.random() < 0.5 ? 'radial' : 'linear',
+      gradientOpacityA: 0.25 + Math.random() * 0.2,
+      gradientOpacityB: 0.55 + Math.random() * 0.2,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: spin ? (Math.random() - 0.5) * 0.0006 : 0,
+      tiltX: 0,
+      tiltY: 0,
+      tiltPhase: Math.random() * Math.PI * 2,
+      tiltFreqX: 0.0008 + Math.random() * 0.0012,
+      tiltFreqY: 0.0008 + Math.random() * 0.0012,
+      tiltAmp: style < 0.4 ? 0 : Math.PI / 3,
+      spawnTime: now,
+      path
+    }
   }
 
   private initializePositions() {
@@ -82,38 +116,30 @@ export class CaptchaEngine {
     }
   }
 
-  private makeShape(shape: import('./types').ShapeType, challenge: Challenge | null, decoy: boolean): InternalShape {
-    const path = newBezierPath(this.config.width, this.config.height, PADDING + SHAPE_BASE_SIZE)
-    return {
-      id: challenge ? challenge.id : `decoy-${Math.random().toString(36).slice(2, 8)}`,
-      challenge,
-      shape,
-      x: 0, y: 0,
-      size: SHAPE_BASE_SIZE + Math.random() * 4,
-      captured: false,
-      pickOrder: 0,
-      gradientAngle: Math.random() * Math.PI * 2,
-      gradientKind: Math.random() < 0.5 ? 'radial' : 'linear',
-      gradientOpacityA: 0.25 + Math.random() * 0.2,
-      gradientOpacityB: 0.55 + Math.random() * 0.2,
-      path
-    }
-  }
-
   private preRenderCamo() {
     if (typeof document === 'undefined') {
       this.camoCanvas = null
       return
     }
+    const W = this.config.width
+    const H = this.config.height
     const off = document.createElement('canvas')
-    off.width = this.config.width
-    off.height = this.config.height
+    off.width = W
+    off.height = H * 3
     const octx = off.getContext('2d')
     if (!octx) {
       this.camoCanvas = null
       return
     }
-    preRenderCamo(octx, this.config.width, this.config.height)
+    fillCamo(octx, W, H)
+    octx.save()
+    octx.translate(0, H)
+    fillCamo(octx, W, H)
+    octx.restore()
+    octx.save()
+    octx.translate(0, 2 * H)
+    octx.drawImage(off, 0, 0, W, H, 0, 2 * H, W, H)
+    octx.restore()
     this.camoCanvas = off
   }
 
@@ -214,20 +240,35 @@ export class CaptchaEngine {
 
   private update(dt: number) {
     const dtClamped = Math.min(dt, 50) * this.config.motionSpeed
+    this.scrollOffset = (this.scrollOffset + dtClamped * SCROLL_SPEED) % (this.config.height * 2)
+    const now = performance.now()
+
     for (const s of this.shapes) {
       if (s.captured) continue
       s.path = advanceBezier(s.path, dtClamped, this.config.width, this.config.height, PADDING + SHAPE_BASE_SIZE)
       const pos = bezierPosition(s.path, s.path.t)
       s.x = pos.x
       s.y = pos.y
+      s.rotation += s.rotationSpeed * dtClamped
+      const elapsed = now - s.spawnTime
+      s.tiltX = Math.cos(elapsed * s.tiltFreqX + s.tiltPhase) * s.tiltAmp
+      s.tiltY = Math.sin(elapsed * s.tiltFreqY + s.tiltPhase) * s.tiltAmp
     }
   }
 
   private render() {
     const ctx = this.ctx
-    ctx.clearRect(0, 0, this.config.width, this.config.height)
+    const W = this.config.width
+    const H = this.config.height
+    ctx.clearRect(0, 0, W, H)
+
     if (this.camoCanvas) {
-      ctx.drawImage(this.camoCanvas, 0, 0, this.config.width, this.config.height)
+      const so = Math.floor(this.scrollOffset)
+      ctx.drawImage(
+        this.camoCanvas,
+        0, so, W, H,
+        0, 0, W, H
+      )
     }
 
     const capturedForIndicator: Array<{ x: number; y: number; pickOrder: number }> = []
@@ -254,7 +295,7 @@ export class CaptchaEngine {
     }
 
     if (this.verified) {
-      drawSuccessCheck(ctx, this.config.width - 24, 24)
+      drawSuccessCheck(ctx, W - 24, 24)
     }
   }
 
@@ -271,10 +312,19 @@ export class CaptchaEngine {
         gradientAngle: s.gradientAngle,
         gradientKind: s.gradientKind,
         gradientOpacityA: s.gradientOpacityA,
-        gradientOpacityB: s.gradientOpacityB
+        gradientOpacityB: s.gradientOpacityB,
+        rotation: s.rotation,
+        rotationSpeed: s.rotationSpeed,
+        tiltX: s.tiltX,
+        tiltY: s.tiltY,
+        tiltPhase: s.tiltPhase,
+        tiltFreqX: s.tiltFreqX,
+        tiltFreqY: s.tiltFreqY,
+        tiltAmp: s.tiltAmp
       })) as ShapeRenderMeta[],
       verified: this.verified,
-      pickOrder: this.pickOrder
+      pickOrder: this.pickOrder,
+      scrollOffset: this.scrollOffset
     }
   }
 }

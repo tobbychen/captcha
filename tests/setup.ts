@@ -22,11 +22,13 @@ function makeMockCtx(): any {
     fill: vi.fn(noop), stroke: vi.fn(noop),
     beginPath: vi.fn(noop), arc: vi.fn(noop),
     moveTo: vi.fn(noop), lineTo: vi.fn(noop), closePath: vi.fn(noop),
+    rect: vi.fn(noop), clip: vi.fn(noop),
     save: vi.fn(noop), restore: vi.fn(noop),
     createRadialGradient: vi.fn(() => grad),
     createLinearGradient: vi.fn(() => grad),
     fillText: vi.fn(noop),
-    setTransform: vi.fn(noop), scale: vi.fn(noop)
+    setTransform: vi.fn(noop), scale: vi.fn(noop),
+    translate: vi.fn(noop), rotate: vi.fn(noop)
   }
 }
 

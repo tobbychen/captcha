@@ -17,6 +17,8 @@ function makeCtx() {
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     closePath: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
     save: vi.fn(),
     restore: vi.fn(),
     createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
@@ -27,7 +29,11 @@ function makeCtx() {
     textBaseline: '' as string,
     fillText: vi.fn(),
     lineCap: '' as string,
-    lineJoin: '' as string
+    lineJoin: '' as string,
+    setTransform: vi.fn(),
+    scale: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn()
   } as any
 }
 
@@ -41,7 +47,15 @@ const baseMeta: ShapeRenderMeta = {
   gradientAngle: 0,
   gradientKind: 'radial',
   gradientOpacityA: 0.3,
-  gradientOpacityB: 0.7
+  gradientOpacityB: 0.7,
+  rotation: 0,
+  rotationSpeed: 0,
+  tiltX: 0,
+  tiltY: 0,
+  tiltPhase: 0,
+  tiltFreqX: 0,
+  tiltFreqY: 0,
+  tiltAmp: 0
 }
 
 describe('renderer.preRenderCamo', () => {
