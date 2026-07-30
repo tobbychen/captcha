@@ -77,7 +77,7 @@ onMounted(() => {
             v-for="c in [...challenges].sort((a,b) => a.order - b.order)"
             :key="c.id"
             class="chip"
-          >{{ c.order }}·{{ c.shape }}</span>
+          >{{ c.order }}·{{ c.character }}</span>
         </div>
         <div class="counter">已点 {{ picked }} / {{ total }}</div>
         <button class="refresh" @click="refresh">↻ 换一组</button>

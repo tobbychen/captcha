@@ -1,5 +1,4 @@
 import { CAMO_PALETTE, pickCamoColor } from './palette'
-import { getShapePath } from './shapes'
 import { STIPPLE_DARK, STIPPLE_LIGHT, OUTLINE_COLOR, SHAPE_FILL_A, SHAPE_FILL_B } from './palette'
 import type { ShapeRenderMeta } from './types'
 
@@ -39,14 +38,12 @@ export function preRenderCamo(
   fillCamo(ctx, width, height)
 }
 
-export function drawShape(
+export function drawCharacter(
   ctx: CanvasRenderingContext2D,
   meta: ShapeRenderMeta,
   outline: boolean,
   decoy: boolean
 ): void {
-  const path = getShapePath(meta.shape, meta.x, meta.y, meta.size)
-
   ctx.save()
   if (decoy) ctx.globalAlpha = 0.55
 
@@ -58,14 +55,19 @@ export function drawShape(
   )
   ctx.translate(-meta.x, -meta.y)
 
+  const fontSize = meta.fontSize
+  ctx.font = `600 ${fontSize}px system-ui, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+
   if (meta.gradientKind === 'radial') {
-    const grad = ctx.createRadialGradient(meta.x, meta.y, 0, meta.x, meta.y, meta.size * 1.2)
+    const grad = ctx.createRadialGradient(meta.x, meta.y, 0, meta.x, meta.y, fontSize * 0.7)
     grad.addColorStop(0, hexWithAlpha(SHAPE_FILL_B, meta.gradientOpacityA))
     grad.addColorStop(1, hexWithAlpha(SHAPE_FILL_A, meta.gradientOpacityB))
     ctx.fillStyle = grad
   } else {
     const a = meta.gradientAngle
-    const r = meta.size * 1.4
+    const r = fontSize * 0.8
     const x0 = meta.x - Math.cos(a) * r
     const y0 = meta.y - Math.sin(a) * r
     const x1 = meta.x + Math.cos(a) * r
@@ -76,26 +78,33 @@ export function drawShape(
     ctx.fillStyle = grad
   }
 
-  ctx.fill(path)
+  ctx.shadowColor = outline
+    ? 'rgba(31, 10, 4, 0.45)'
+    : 'rgba(31, 10, 4, 0.25)'
+  ctx.shadowBlur = outline ? 4 : 7
+  ctx.fillText(meta.char, meta.x, meta.y)
+  ctx.shadowBlur = 0
 
-  const stippleCount = 18 + Math.floor(Math.random() * 13)
+  const metrics = ctx.measureText(meta.char)
+  const boxW = Math.max(metrics.width, fontSize * 0.4)
+  const boxH = fontSize
+
+  const stippleCount = 14 + Math.floor(Math.random() * 10)
   for (let i = 0; i < stippleCount; i++) {
-    const angle = Math.random() * Math.PI * 2
-    const dist = Math.random() * meta.size * 0.85
-    const dx = meta.x + Math.cos(angle) * dist
-    const dy = meta.y + Math.sin(angle) * dist
+    const sx = meta.x - boxW / 2 + Math.random() * boxW
+    const sy = meta.y - boxH / 2 + Math.random() * boxH
     const r = 0.4 + Math.random() * 0.9
     const light = Math.random() < 0.18
     ctx.beginPath()
-    ctx.arc(dx, dy, r, 0, Math.PI * 2)
+    ctx.arc(sx, sy, r, 0, Math.PI * 2)
     ctx.fillStyle = light ? hexWithAlpha(STIPPLE_LIGHT, 0.45) : hexWithAlpha(STIPPLE_DARK, 0.85)
     ctx.fill()
   }
 
   if (outline) {
     ctx.strokeStyle = OUTLINE_COLOR
-    ctx.lineWidth = 2
-    ctx.stroke(path)
+    ctx.lineWidth = 1
+    ctx.strokeText(meta.char, meta.x, meta.y)
   }
 
   ctx.restore()

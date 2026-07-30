@@ -5,8 +5,8 @@ import CaptchaCanvas from '../src/components/CaptchaCanvas.vue'
 import type { Challenge } from '../src/captcha/types'
 
 const challenges: Challenge[] = [
-  { id: 'a', shape: 'circle', order: 1 },
-  { id: 'b', shape: 'triangle', order: 2 }
+  { id: 'a', character: 'A', order: 1 },
+  { id: 'b', character: 'B', order: 2 }
 ]
 
 describe('CaptchaCanvas.vue', () => {

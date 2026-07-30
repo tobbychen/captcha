@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { preRenderCamo, drawShape, drawOrderIndicator, drawSuccessCheck } from '../src/captcha/renderer'
+import { preRenderCamo, drawCharacter, drawOrderIndicator, drawSuccessCheck } from '../src/captcha/renderer'
 import type { ShapeRenderMeta } from '../src/captcha/types'
 
 function makeCtx() {
@@ -28,6 +28,8 @@ function makeCtx() {
     textAlign: '' as string,
     textBaseline: '' as string,
     fillText: vi.fn(),
+    strokeText: vi.fn(),
+    measureText: vi.fn(() => ({ width: 15 })),
     lineCap: '' as string,
     lineJoin: '' as string,
     setTransform: vi.fn(),
@@ -39,9 +41,9 @@ function makeCtx() {
 
 const baseMeta: ShapeRenderMeta = {
   id: 'a',
-  challenge: { id: 'a', shape: 'circle', order: 1 },
-  shape: 'circle',
-  x: 100, y: 100, size: 20,
+  challenge: { id: 'a', character: 'A', order: 1 },
+  char: 'A',
+  x: 100, y: 100, fontSize: 28,
   captured: false,
   pickOrder: 0,
   gradientAngle: 0,
@@ -67,30 +69,30 @@ describe('renderer.preRenderCamo', () => {
   })
 })
 
-describe('renderer.drawShape', () => {
-  it('fills shape with gradient and strokes with outline', () => {
+describe('renderer.drawCharacter', () => {
+  it('fills character with gradient and strokes with outline', () => {
     const ctx = makeCtx()
-    drawShape(ctx, baseMeta, true, false)
+    drawCharacter(ctx, baseMeta, true, false)
     expect(ctx.createRadialGradient).toHaveBeenCalled()
-    expect(ctx.fill).toHaveBeenCalled()
-    expect(ctx.stroke).toHaveBeenCalled()
+    expect(ctx.fillText).toHaveBeenCalled()
+    expect(ctx.strokeText).toHaveBeenCalled()
   })
 
-  it('skips outline for decoy shapes', () => {
+  it('skips outline for decoy chars', () => {
     const ctx = makeCtx()
-    drawShape(ctx, baseMeta, false, true)
-    expect(ctx.stroke).not.toHaveBeenCalled()
+    drawCharacter(ctx, baseMeta, false, true)
+    expect(ctx.strokeText).not.toHaveBeenCalled()
   })
 
-  it('draws stipple dots inside shape', () => {
+  it('draws stipple dots around character', () => {
     const ctx = makeCtx()
-    drawShape(ctx, baseMeta, true, false)
-    expect(ctx.arc.mock.calls.length).toBeGreaterThan(15)
+    drawCharacter(ctx, baseMeta, true, false)
+    expect(ctx.arc.mock.calls.length).toBeGreaterThan(10)
   })
 
   it('uses linear gradient when kind=linear', () => {
     const ctx = makeCtx()
-    drawShape(ctx, { ...baseMeta, gradientKind: 'linear' }, true, false)
+    drawCharacter(ctx, { ...baseMeta, gradientKind: 'linear' }, true, false)
     expect(ctx.createLinearGradient).toHaveBeenCalled()
   })
 })

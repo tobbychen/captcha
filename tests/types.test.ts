@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SHAPE_TYPES } from '../src/captcha/types'
+import { SHAPE_TYPES, DECOY_CHAR_POOL } from '../src/captcha/types'
 import type { Challenge, VerifyResult } from '../src/captcha/types'
 
 describe('types', () => {
@@ -10,13 +10,17 @@ describe('types', () => {
     ])
   })
 
-  it('Challenge shape compiles', () => {
-    const c: Challenge = { id: 'a', shape: 'circle', order: 1 }
-    expect(c.id).toBe('a')
+  it('Challenge uses character field', () => {
+    const c: Challenge = { id: 'a', character: 'A', order: 1 }
+    expect(c.character).toBe('A')
   })
 
   it('VerifyResult shape compiles', () => {
     const r: VerifyResult = { ok: true, orderedIds: ['a'], expected: ['a'] }
     expect(r.ok).toBe(true)
+  })
+
+  it('DECOY_CHAR_POOL has characters', () => {
+    expect(DECOY_CHAR_POOL.length).toBeGreaterThan(10)
   })
 })

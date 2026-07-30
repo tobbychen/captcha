@@ -4,10 +4,10 @@ import type { Challenge } from '../src/captcha/types'
 
 function makeChallenges(): Challenge[] {
   return [
-    { id: 'a', shape: 'circle', order: 1 },
-    { id: 'b', shape: 'triangle', order: 2 },
-    { id: 'c', shape: 'square', order: 3 },
-    { id: 'd', shape: 'star', order: 4 }
+    { id: 'a', character: 'A', order: 1 },
+    { id: 'b', character: 'B', order: 2 },
+    { id: 'c', character: 'C', order: 3 },
+    { id: 'd', character: 'D', order: 4 }
   ]
 }
 
@@ -23,6 +23,8 @@ function makeCtx() {
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     createPattern: vi.fn(() => null),
     fillText: vi.fn(),
+    strokeText: vi.fn(),
+    measureText: vi.fn(() => ({ width: 16 })),
     setTransform: vi.fn(), scale: vi.fn(), translate: vi.fn(), rotate: vi.fn(),
     font: '', textAlign: '', textBaseline: '',
     globalAlpha: 1,
@@ -46,7 +48,7 @@ describe('CaptchaEngine', () => {
     engine.stop()
   })
 
-  it('decoy types do not duplicate any challenge shape', () => {
+  it('decoy chars do not duplicate any challenge character', () => {
     const engine = new CaptchaEngine({
       width: 320, height: 200,
       challenges: makeChallenges(),
@@ -56,10 +58,10 @@ describe('CaptchaEngine', () => {
     engine.start()
 
     const shapes = engine.getState().shapes
-    const challengeShapes = new Set(makeChallenges().map(c => c.shape))
+    const challengeChars = new Set(makeChallenges().map(c => c.character))
     for (const s of shapes) {
       if (s.challenge === null) {
-        expect(challengeShapes.has(s.shape)).toBe(false)
+        expect(challengeChars.has(s.char)).toBe(false)
       }
     }
     engine.stop()
@@ -167,8 +169,8 @@ describe('CaptchaEngine', () => {
   it('warns on duplicate challenge ids', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const dups: Challenge[] = [
-      { id: 'a', shape: 'circle', order: 1 },
-      { id: 'a', shape: 'triangle', order: 2 }
+      { id: 'a', character: 'A', order: 1 },
+      { id: 'a', character: 'B', order: 2 }
     ]
     const engine = new CaptchaEngine({
       width: 200, height: 100,

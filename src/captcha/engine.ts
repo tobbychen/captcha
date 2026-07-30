@@ -1,11 +1,11 @@
 import type { Challenge, EngineConfig, ShapeRenderMeta, VerifyResult } from './types'
-import { SHAPE_TYPES } from './types'
-import { fillCamo, drawShape, drawOrderIndicator, drawSuccessCheck, CAMO_TILE_HEIGHT } from './renderer'
+import { DECOY_CHAR_POOL } from './types'
+import { fillCamo, drawCharacter, drawOrderIndicator, drawSuccessCheck, CAMO_TILE_HEIGHT } from './renderer'
 import { newBezierPath, advanceBezier, bezierPosition, type BezierPath } from './motion'
 
 const PADDING = 18
-const HIT_RADIUS = 25
-const SHAPE_BASE_SIZE = 18
+const HIT_RADIUS = 28
+const CHAR_FONT_SIZE = 28
 const SCROLL_SPEED = 0.025
 
 interface EngineCallbacks {
@@ -13,7 +13,7 @@ interface EngineCallbacks {
   onProgress: (picked: number, total: number) => void
 }
 
-interface InternalShape extends ShapeRenderMeta {
+interface InternalChar extends ShapeRenderMeta {
   challenge: Challenge | null
   path: BezierPath
   spawnTime: number
@@ -23,7 +23,7 @@ export class CaptchaEngine {
   private ctx: CanvasRenderingContext2D
   private config: EngineConfig
   private callbacks: EngineCallbacks
-  private shapes: InternalShape[] = []
+  private shapes: InternalChar[] = []
   private rafId: number | null = null
   private lastTs = 0
   private pickOrder = 0
@@ -36,7 +36,7 @@ export class CaptchaEngine {
     this.ctx = ctx
     this.callbacks = callbacks
     this.warnDuplicates()
-    this.spawnShapes()
+    this.spawnChars()
     this.preRenderCamo()
   }
 
@@ -51,7 +51,7 @@ export class CaptchaEngine {
     }
   }
 
-  private spawnShapes() {
+  private spawnChars() {
     this.shapes = []
     this.pickOrder = 0
     this.verified = false
@@ -59,31 +59,32 @@ export class CaptchaEngine {
 
     const now = performance.now()
     for (const c of this.config.challenges) {
-      this.shapes.push(this.makeShape(c.shape, c, false, now))
+      this.shapes.push(this.makeChar(c.character, c, false, now))
     }
 
     const [minDecoy, maxDecoy] = this.config.decoyRange
     const decoyCount = minDecoy + Math.floor(Math.random() * (maxDecoy - minDecoy + 1))
-    const challengeShapes = new Set(this.config.challenges.map(c => c.shape))
-    const pool = SHAPE_TYPES.filter(t => !challengeShapes.has(t))
-    for (let i = 0; i < decoyCount; i++) {
-      const t = pool[Math.floor(Math.random() * pool.length)]
-      this.shapes.push(this.makeShape(t, null, true, now))
+    const usedChars = new Set(this.config.challenges.map(c => c.character))
+    const pool = [...DECOY_CHAR_POOL].filter(ch => !usedChars.has(ch))
+    for (let i = 0; i < decoyCount && pool.length > 0; i++) {
+      const idx = Math.floor(Math.random() * pool.length)
+      const ch = pool.splice(idx, 1)[0]
+      this.shapes.push(this.makeChar(ch, null, true, now))
     }
 
     this.initializePositions()
   }
 
-  private makeShape(shape: import('./types').ShapeType, challenge: Challenge | null, decoy: boolean, now: number): InternalShape {
-    const path = newBezierPath(this.config.width, this.config.height, PADDING + SHAPE_BASE_SIZE)
+  private makeChar(char: string, challenge: Challenge | null, decoy: boolean, now: number): InternalChar {
+    const path = newBezierPath(this.config.width, this.config.height, PADDING + CHAR_FONT_SIZE)
     const style = Math.random()
     const spin = Math.random() < 0.6
     return {
       id: challenge ? challenge.id : `decoy-${Math.random().toString(36).slice(2, 8)}`,
       challenge,
-      shape,
+      char,
       x: 0, y: 0,
-      size: SHAPE_BASE_SIZE + Math.random() * 4,
+      fontSize: CHAR_FONT_SIZE + Math.floor(Math.random() * 8),
       captured: false,
       pickOrder: 0,
       gradientAngle: Math.random() * Math.PI * 2,
@@ -104,7 +105,7 @@ export class CaptchaEngine {
   }
 
   private initializePositions() {
-    const padding = PADDING + SHAPE_BASE_SIZE
+    const padding = PADDING + CHAR_FONT_SIZE
     for (const s of this.shapes) {
       const pos = bezierPosition(s.path, 0)
       s.x = pos.x
@@ -158,7 +159,7 @@ export class CaptchaEngine {
   refresh(newChallenges: Challenge[]) {
     this.stop()
     this.config = { ...this.config, challenges: newChallenges }
-    this.spawnShapes()
+    this.spawnChars()
     this.preRenderCamo()
     this.start()
   }
@@ -167,7 +168,7 @@ export class CaptchaEngine {
     for (const s of this.shapes) {
       s.captured = false
       s.pickOrder = 0
-      s.path = newBezierPath(this.config.width, this.config.height, PADDING + SHAPE_BASE_SIZE)
+      s.path = newBezierPath(this.config.width, this.config.height, PADDING + CHAR_FONT_SIZE)
     }
     this.pickOrder = 0
     this.verified = false
@@ -236,7 +237,7 @@ export class CaptchaEngine {
 
     for (const s of this.shapes) {
       if (s.captured) continue
-      s.path = advanceBezier(s.path, dtClamped, this.config.width, this.config.height, PADDING + SHAPE_BASE_SIZE)
+      s.path = advanceBezier(s.path, dtClamped, this.config.width, this.config.height, PADDING + CHAR_FONT_SIZE)
       const pos = bezierPosition(s.path, s.path.t)
       s.x = pos.x
       s.y = pos.y
@@ -267,7 +268,7 @@ export class CaptchaEngine {
     for (const s of this.shapes) {
       const isDecoy = s.challenge === null
       const showOutline = !isDecoy
-      drawShape(ctx, s, showOutline, isDecoy)
+      drawCharacter(ctx, s, showOutline, isDecoy)
       if (s.captured && s.challenge) {
         capturedForIndicator.push({ x: s.x, y: s.y, pickOrder: s.pickOrder })
       }
@@ -295,9 +296,9 @@ export class CaptchaEngine {
       shapes: this.shapes.map(s => ({
         id: s.id,
         challenge: s.challenge,
-        shape: s.shape,
+        char: s.char,
         x: s.x, y: s.y,
-        size: s.size,
+        fontSize: s.fontSize,
         captured: s.captured,
         pickOrder: s.pickOrder,
         gradientAngle: s.gradientAngle,

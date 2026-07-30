@@ -5,9 +5,11 @@ export const SHAPE_TYPES: ShapeType[] = [
   'circle', 'triangle', 'square', 'star', 'pentagon', 'hexagon'
 ]
 
+export const DECOY_CHAR_POOL = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
 export interface Challenge {
   id: string
-  shape: ShapeType
+  character: string
   order: number
 }
 
@@ -27,10 +29,10 @@ export interface CapturedShape {
 export interface ShapeRenderMeta {
   id: string
   challenge: Challenge | null
-  shape: ShapeType
+  char: string
   x: number
   y: number
-  size: number
+  fontSize: number
   captured: boolean
   pickOrder: number
   gradientAngle: number
